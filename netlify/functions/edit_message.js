@@ -1,10 +1,10 @@
 // netlify/functions/edit_message.js
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 exports.handler = async function (event, context) {
     const { chat_id, message_id, text } = JSON.parse(event.body);
 
-    // Netlify environment variables orqali tokenni olish
+    // Environment variables orqali tokenni olish
     const BOT_TOKEN = process.env.BOT_TOKEN;
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`;
 
@@ -15,30 +15,20 @@ exports.handler = async function (event, context) {
     };
 
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+        const response = await axios.post(url, data, {
+            headers: { 'Content-Type': 'application/json' }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: errorData.description })
-            };
-        }
-
-        const responseData = await response.json();
         return {
             statusCode: 200,
-            body: JSON.stringify(responseData)
+            body: JSON.stringify(response.data)
         };
 
     } catch (error) {
+        const errorMessage = error.response ? error.response.data.description : error.toString();
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.toString() })
+            body: JSON.stringify({ error: errorMessage })
         };
     }
 };
