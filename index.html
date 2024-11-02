@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Loading Page</title>
+    <style>
+        /* Sahifaning umumiy uslubi */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #FFD700; /* Taxi sariq rang */
+            font-family: Arial, sans-serif;
+        }
+
+        /* TAXI matn animatsiyasi uslubi */
+        .loading-text {
+            display: flex;
+            font-size: 60px;
+            font-weight: bold;
+            color: #333333; /* Taxi qora rang */
+            letter-spacing: 8px;
+        }
+
+        /* Har bir harfni yonib-o'chuvchi animatsiyaga moslashtiramiz */
+        .loading-text span {
+            opacity: 0;
+            animation: flash 1.2s ease-in-out infinite;
+        }
+        .loading-text span:nth-child(1) { animation-delay: 0.1s; }
+        .loading-text span:nth-child(2) { animation-delay: 0.3s; }
+        .loading-text span:nth-child(3) { animation-delay: 0.5s; }
+        .loading-text span:nth-child(4) { animation-delay: 0.7s; }
+
+        /* Flash animatsiyasi */
+        @keyframes flash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Xatolik matnining uslubi */
+        .error-message {
+            display: none;
+            font-size: 24px;
+            color: #333333; /* Qora rang */
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading text with animation -->
+    <div class="loading-text">
+        <span>T</span>
+        <span>A</span>
+        <span>X</span>
+        <span>I</span>
+    </div>
+    <!-- Error message -->
+    <div class="error-message" id="error-message"></div>
+
+    <script>
+        // URL parametrlarini olish uchun funksiyani yaratamiz
+        function getURLParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                chat_id: urlParams.get('chat_id'),
+                message_id: urlParams.get('message_id'),
+                user_id: urlParams.get('user_id')
+            };
+        }
+
+        // Xabarni tahrirlash funksiyasi
+        async function editMessageText(chat_id, message_id) {
+            const url = '/.netlify/functions/edit_message';  // Netlify function endpointi
+            const params = {
+                chat_id: chat_id,
+                message_id: message_id,
+                text: "Qabul qilindi"
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Xatolik yuz berdi');
+                }
+            } catch (error) {
+                showErrorMessage(`Xatolik: ${error.message}`);
+                stopAnimation();
+            }
+        }
+
+        // Foydalanuvchini Telegram hisobiga yo'naltirish funksiyasi
+        function redirectToUser(user_id) {
+            const telegramURL = `tg://user?id=${user_id}`;
+            window.location.href = telegramURL;
+        }
+
+        // Xatolik matnini ko'rsatish funksiyasi
+        function showErrorMessage(message) {
+            const errorMessageElement = document.getElementById('error-message');
+            errorMessageElement.textContent = message;
+            errorMessageElement.style.display = 'block';
+        }
+
+        // Animatsiyani to'xtatish funksiyasi
+        function stopAnimation() {
+            document.querySelector('.loading-text').style.display = 'none';
+        }
+
+        // Asosiy bajariladigan kod
+        const { chat_id, message_id, user_id } = getURLParams();
+        if (chat_id && message_id && user_id) {
+            editMessageText(chat_id, message_id).then(() => {
+                redirectToUser(user_id);
+            }).catch(error => {
+                showErrorMessage(`Xatolik: ${error.message}`);
+                stopAnimation();
+            });
+        } else {
+            showErrorMessage("Kerakli ma'lumotlar mavjud emas");
+            stopAnimation();
+        }
+    </script>
+</body>
+</html>
